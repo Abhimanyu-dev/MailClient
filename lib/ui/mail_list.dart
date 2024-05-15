@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
-import 'dart:developer';
 import 'package:mail_client/components/mail_item.dart';
 
 class MailList extends StatefulWidget{
@@ -14,7 +12,7 @@ class MailList extends StatefulWidget{
 
 class _MailListState extends State<MailList>{
   
-  ScrollController _scrollViewController = ScrollController();
+  final ScrollController _scrollViewController = ScrollController();
   bool _showAppbar = true;
   bool isScrollingDown = false;
 
