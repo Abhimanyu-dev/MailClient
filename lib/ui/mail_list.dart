@@ -29,6 +29,7 @@ class _MailListState extends State<MailList>{
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
+        
         elevation: 0,
         backgroundColor: Colors.transparent,
         automaticallyImplyLeading: false,
@@ -66,11 +67,16 @@ class _MailListState extends State<MailList>{
           }),
         ),
       ),
-      body: ListView.builder(
-        itemBuilder: (BuildContext context, int index){
-          return const Mail(sender: Text("Sender"), body: Text("Body"));
-        }
-        )
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(image: AssetImage("assets/bg.jpg"), fit: BoxFit.cover)
+        ),
+        child: ListView.builder(
+          itemBuilder: (BuildContext context, int index){
+            return const Mail(sender: Text("Sender"), body: Text("Body"));
+          }
+          ),
+      )
     );
   }
 }

@@ -1,16 +1,36 @@
-# mail_client
+# Mail Client
 
-A new Flutter project.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+Clone the repo 
 
-A few resources to get you started if this is your first Flutter project:
+```bash
+git clone https://github.com/Abhimanyu-dev/MailClient.git
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Change into the directory
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash 
+cd MailClient
+```
+
+Install dependencies
+```bash
+flutter pub get
+```
+If you are using vscode open the directory in vscode and select the device in the bottom right corner and press F5 the app should run in the chosen device(Preferably in an android emulator).
+
+![plot](./Screenshots/DeviceSelection.png)
+
+### Screenshots
+
+* Landing Page
+![LandingPage](./Screenshots/Landing%20Page.png)
+
+
+* Sign In Page
+![SignInPage](./Screenshots/SignInPage.png)
+
+* Home Page
+![HomePage](./Screenshots/HomePage.png)
