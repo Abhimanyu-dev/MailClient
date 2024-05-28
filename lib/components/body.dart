@@ -1,28 +1,21 @@
 import 'package:flutter/material.dart';
 
-class Input extends StatefulWidget {
-  const Input({
-    super.key,this.controller, required this.icon, required this.label, required this.isPassword
+class Body extends StatefulWidget {
+  const Body({
+    super.key
   });
-
-  final bool isPassword;
-  final Icon icon;
-  final String label;
-  final TextEditingController? controller;
 
 
   @override
-  State<Input> createState() => _InputState();
+  State<Body> createState() => _BodyState();
 }
 
-class _InputState extends State<Input> {
+class _BodyState extends State<Body> {
 
   late bool obscure;
 
-
   @override
   void initState(){
-    obscure = widget.isPassword;
     super.initState();
   }
 
@@ -32,22 +25,10 @@ class _InputState extends State<Input> {
       padding: const EdgeInsets.symmetric(vertical: 12.0),
     
       child: TextField(
-        controller: widget.controller,
         style: const TextStyle(color: Colors.white, fontSize: 18),
-        obscureText: obscure,
+        maxLines: null,
+        expands: true,
         decoration: InputDecoration(
-          prefixIcon: widget.icon,
-          suffixIcon: widget.isPassword ? 
-            IconButton(
-              onPressed: (){
-              setState(() {
-                obscure = !obscure;
-              });
-            }, 
-            icon: obscure ? const Icon(Icons.visibility_off) : const Icon(Icons.visibility)
-            ) : 
-            null
-          ,
           filled:true,
           fillColor: Colors.transparent,
           enabledBorder:  OutlineInputBorder(
@@ -59,7 +40,7 @@ class _InputState extends State<Input> {
             borderRadius: BorderRadius.circular(20)
           ),
           
-          labelText: widget.label,
+          labelText: "Body",
           labelStyle: const TextStyle(color: Colors.white),
           
         ),

@@ -13,12 +13,8 @@ class EntryPage extends StatelessWidget{
   @override
   Widget build(BuildContext context){
     return Scaffold(
-      backgroundColor: Colors.black,
         
         body: Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(image: AssetImage('assets/bg.jpg'), fit: BoxFit.cover),
-          ),
           child: const Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             
@@ -57,23 +53,6 @@ class Buttons extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).push(RouteAnimation.createRoute(const SignInPage()));
               }
-            ),
-      
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.of(context).push(RouteAnimation.createRoute(const RegistrationPage()));
-                },
-                child: Container(
-                  height: 50,
-                  width: 350,
-                  alignment: Alignment.center,
-                  child: const Text("Create a new account",
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  )
-                  ),
-              ),
             ),
           ],),
       ),
