@@ -1,11 +1,15 @@
+import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/material.dart';
 import 'package:mail_client/animation/animation.dart';
+import 'package:mail_client/backend/mail_validation.dart';
+import 'package:mail_client/models/email_model.dart';
 import 'package:mail_client/ui/mail.dart';
 
 class MailTile extends StatelessWidget{
-  const MailTile({super.key, required this.sender, required this.body});
+  const MailTile({super.key, required this.mail, required this.imapClient});
 
-  final Widget sender, body;
+  final Email mail;
+  final ImapClient imapClient;
 
   @override
   Widget build(BuildContext context){
@@ -20,10 +24,16 @@ class MailTile extends StatelessWidget{
       ),
       alignment: Alignment.topLeft,
       child: ListTile(
-        title: sender,
-        subtitle: body,
-        onTap: () {
-          Navigator.of(context).push(RouteAnimation.createRoute(const Mail()));
+        title: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Text(mail.sender, overflow: TextOverflow.ellipsis,),
+        ),
+        subtitle: Text(mail.subject, overflow: TextOverflow.ellipsis,),
+        onTap: () async {
+          int id = mail.uid!;
+          var email = await imapClient.fetchMessage(id, "(FLAGS BODY[])");
+          
+          Navigator.of(context).push(RouteAnimation.createRoute(Mail(mail: email.messages[0])));
         },
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         leading: const Icon(Icons.person),

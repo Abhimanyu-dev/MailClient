@@ -1,3 +1,4 @@
+import 'dart:async';
 import "dart:io";
 import 'package:enough_mail/enough_mail.dart';
 
@@ -11,6 +12,9 @@ Future<bool> validateImap(ImapClient client, String username, String password,{ 
   } on ImapException catch (e){
     print('Imap failed with $e');
     return false;
+  } on TimeoutException catch(e){
+    print("Timeout Exception");
+    return false;
   }
 }
 
@@ -23,7 +27,7 @@ Future<bool> validateSmtp(SmtpClient client, String username, String password,{ 
     await client.authenticate(username, password, AuthMechanism.plain);
     return true;
   } on SmtpException catch (e){
-    print('Imap failed with $e');
+    print('Smtp failed with $e');
     return false;
   }
 }

@@ -2,9 +2,12 @@
 import 'dart:ui';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mail_client/animation/animation.dart';
 import 'package:mail_client/backend/mail_validation.dart';
 import 'package:mail_client/components/input.dart';
+import 'package:mail_client/models/email_model.dart';
+import 'package:mail_client/models/user_model.dart';
 import 'package:mail_client/ui/mail_list.dart';
 
 class SignInForm extends StatefulWidget{
@@ -16,9 +19,20 @@ class SignInForm extends StatefulWidget{
 
 class _SignInFormState extends State<SignInForm> {
 
+  Box<User> localDb = Hive.box<User>('local_db');
+
 
   final usernameController = TextEditingController();
   final passwordController = TextEditingController();
+
+  @override
+  void initState(){
+    if(localDb.isNotEmpty){
+    usernameController.text = localDb.getAt(0)!.username;
+    passwordController.text = localDb.getAt(0)!.password;
+    }
+    super.initState();
+  }
 
 
   @override
@@ -66,21 +80,47 @@ class _SignInFormState extends State<SignInForm> {
                                 ),
                                 onPressed: () async {
                                   final imapClient = ImapClient(isLogEnabled: false);
-                                  final smtpClient = SmtpClient("enough.de", isLogEnabled: true);
                                   final user = usernameController.text;
-                                  bool isImapValid = await validateImap(imapClient, usernameController.text, passwordController.text);
-
-                                  if(isImapValid){
-                                    bool isSmtpValid = await validateSmtp(smtpClient, usernameController.text, passwordController.text);
-                                  
-                                    if(isSmtpValid){
-                                      Navigator.of(context).pushAndRemoveUntil(RouteAnimation.createRoute(MailList(imapClient: imapClient, smtpClient: smtpClient, user: user)), (Route<dynamic> route) => false);
+                                  final password = passwordController.text;
+                                  print(localDb.getAt(0)!.mails.length);
+                                  if(localDb.isEmpty){
+                                    bool isImapValid = await validateImap(imapClient, usernameController.text, passwordController.text);
+                                    if(isImapValid){
+                                      await imapClient.selectInbox();
+                                      var result = await imapClient.fetchRecentMessages();
+                                      List<Email> email_list = [];
+                                      for(var message in result.messages){
+                                        var newMail = Email("${message.fromEmail}", "${message.decodeSubject()}", message.sequenceId);
+                                        email_list.add(newMail);
+                                      }
+                                      var newUser = User(user, email_list, password);
+                                      localDb.add(newUser);
+                                      Navigator.of(context).pushAndRemoveUntil(RouteAnimation.createRoute(MailList(imapClient: imapClient,)), (Route<dynamic> route) => false);
                                     }
-                                  }else{
-                                    showDialog(context: context, builder: (BuildContext context) => const AlertDialog(
-                                      title: Text("Invalid username or password"),
-                                    ));
-                                    
+                                  }
+                                  else if(user == localDb.getAt(0)!.username){
+                                      Navigator.of(context).pushAndRemoveUntil(RouteAnimation.createRoute(MailList(imapClient: ImapClient(isLogEnabled: false),)), (Route<dynamic> route) => false);
+                                  }
+                                  else{
+                                    bool isImapValid = await validateImap(imapClient, usernameController.text, passwordController.text);
+                                    if(isImapValid){
+                                      await imapClient.selectInbox();
+                                      var result = await imapClient.fetchRecentMessages();
+                                      List<Email> email_list = [];
+                                      for(var message in result.messages){
+                                        print(message.sequenceId);
+                                        var newMail = Email("${message.fromEmail}", "${message.decodeSubject()}", message.sequenceId);
+                                        print(newMail.uid);
+                                        email_list.add(newMail);
+                                      }
+                                      var newUser = User(user, email_list, password);
+                                      localDb.add(newUser);
+                                      Navigator.of(context).pushAndRemoveUntil(RouteAnimation.createRoute(MailList(imapClient: imapClient,)), (Route<dynamic> route) => false);
+                                    }else{
+                                      showDialog(context: context, builder: (BuildContext context) => const AlertDialog(
+                                        title: Text("Invalid username or password"),
+                                      ));
+                                    }
                                   }
                                 },
                                 child: const Padding(

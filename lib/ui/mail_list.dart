@@ -1,20 +1,21 @@
 import 'package:enough_mail/enough_mail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mail_client/animation/animation.dart';
+import 'package:mail_client/backend/mail_validation.dart';
 import 'package:mail_client/components/mail_item.dart';
 import 'package:mail_client/components/side_menu.dart';
+import 'package:mail_client/models/email_model.dart';
+import 'package:mail_client/models/user_model.dart';
 import 'package:mail_client/ui/send_page.dart';
-import 'package:mail_client/ui/singin_page.dart';
 
 class MailList extends StatefulWidget{
-  const MailList({super.key, required this.imapClient, required this.smtpClient, required this.user});
+  MailList({super.key, required this.imapClient});
 
-  final ImapClient imapClient;
-  final SmtpClient smtpClient;
-  final String user;
-
-
+  Box<User> localDB = Hive.box<User>("local_db");
+  late User user;
+  ImapClient imapClient;
 
 
   @override
@@ -28,11 +29,18 @@ class _MailListState extends State<MailList>{
   bool _showAppbar = true;
   bool isScrollingDown = false;
 
-  
-
+  Future<void> init() async {
+    widget.user = widget.localDB.getAt(0)!;
+    await validateImap(widget.imapClient, widget.user.username, widget.user.password);
+    await widget.imapClient.selectInbox();
+  }
 
   @override
   void initState() {
+    widget.user = widget.localDB.getAt(0)!;
+    if(!widget.imapClient.isLoggedIn){
+      init();
+    }
     super.initState();
     _scrollViewController.addListener(() {
       if (_scrollViewController.position.userScrollDirection == ScrollDirection.reverse) {
@@ -70,7 +78,7 @@ class _MailListState extends State<MailList>{
       drawer: const SideMenu(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.of(context).push(RouteAnimation.createRoute(SendPage(smtpClient: widget.smtpClient, user: widget.user)));
+          Navigator.of(context).push(RouteAnimation.createRoute(SendPage()));
         },
         child: const Icon(Icons.edit),
       ),
@@ -128,7 +136,7 @@ class _MailListState extends State<MailList>{
             ),
             Expanded(
               child: Container(
-                child: Mails(controller: _scrollViewController, imapClient: widget.imapClient,)
+                child: Mails(controller: _scrollViewController, imapClient: widget.imapClient, user: widget.user, localDB: widget.localDB)
                 ),
             )
           ],
@@ -140,11 +148,13 @@ class _MailListState extends State<MailList>{
 
 class Mails extends StatefulWidget {
   Mails({
-    super.key, required this.controller, required this.imapClient
+    super.key, required this.controller, required this.imapClient, required this.user, required this.localDB
     });
 
   final ScrollController controller;
   final ImapClient imapClient;
+  final User user;
+  final Box<User> localDB;
 
   @override
   State<Mails> createState() => _MailsState();
@@ -152,37 +162,70 @@ class Mails extends StatefulWidget {
 
 class _MailsState extends State<Mails> {
   List<MimeMessage> mailList = [];
+  int messages = 0;
 
   @override
   void initState() {  
     super.initState();
-    getMails();
+    widget.controller.addListener(_loadMore);
+    _handleRefresh();
   }
 
-  void getMails() async {
-    await widget.imapClient.selectInbox();
-    final result = await widget.imapClient.fetchRecentMessages(); 
-    for(final message in result.messages){
-      setState(() {
-        mailList.add(message);
-      });
+  Future<void> _loadMore() async {
+    if(widget.controller.position.pixels >= (widget.controller.position.maxScrollExtent - 10)){
+      final upperSequenceId = widget.user.mails.last.uid!;
+      var lowerSequenceId = upperSequenceId - 30;
+      if(lowerSequenceId < 1){
+        lowerSequenceId = 1;
+      }
+      var result = await widget.imapClient.fetchMessages(MessageSequence.fromRange(lowerSequenceId, upperSequenceId), "(FLAGS BODY[])");
+      for(var message in result.messages){
+        setState(() {
+          var newMail = Email("${message.fromEmail}", "${message.decodeSubject()}", message.sequenceId);
+          if(!widget.user.mails.contains(newMail)){
+            widget.user.mails.add(newMail);
+          }
+        });
+      }
+      widget.localDB.putAt(0, widget.user);
+
     }
   }
 
-
+  Future<void> _handleRefresh() async {
+    if(widget.imapClient.isLoggedIn) {
+      final box  = await widget.imapClient.selectInbox();
+      final lastMessageId = box.messagesExists;
+      if(lastMessageId >= widget.user.mails.first.uid!){
+        final result = await widget.imapClient.fetchRecentMessages();
+        for (final message in result.messages) {
+          setState(() {
+            var newMail = Email(
+                "${message.fromEmail}", "${message.decodeSubject()}",
+                message.sequenceId);
+            if (!widget.user.mails.contains(newMail)) {
+              widget.user.mails.add(newMail);
+            }
+          });
+        }
+        widget.localDB.putAt(0, widget.user);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return (
-        ListView.builder(
-          controller: widget.controller,
-          itemCount: mailList.length,
-          itemBuilder: (context, index){
-            final sender = mailList[index].fromEmail as String;
-            final subject = mailList[index].decodeSubject() as String;
-            return MailTile(sender: Text(sender), body: Text(subject));
-          },
-        )
+    return RefreshIndicator(
+      onRefresh: _handleRefresh,
+      child: (
+          ListView.builder(
+            controller: widget.controller,
+            itemCount: widget.user.mails.length,
+            itemBuilder: (context, index){
+              return MailTile(mail: widget.user.mails[widget.user.mails.length - index - 1], imapClient: widget.imapClient,);
+            },
+          )
+      ),
     );
   }
 }

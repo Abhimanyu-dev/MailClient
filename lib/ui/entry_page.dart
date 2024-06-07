@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mail_client/components/frosted_button.dart';
-import 'package:mail_client/ui/registration_page.dart';
 import 'package:mail_client/ui/singin_page.dart';
 import 'package:mail_client/animation/animation.dart';
 
